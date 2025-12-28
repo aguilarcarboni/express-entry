@@ -234,13 +234,6 @@ def render():
         print("English exam not taken")
     print()
 
-    print("Test Scores:")
-    if GMAT_SCORE is not None:
-        print(f"GMAT Score: {GMAT_SCORE}")
-    else:
-        print("GMAT score not taken")
-    print()
-
     # Eligibility section laid out like express_entry.
     print(f"Eligibility: {'PASS' if el.eligible else 'CHECK REQUIREMENTS'}")
     print()
