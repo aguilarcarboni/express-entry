@@ -250,7 +250,7 @@ def render():
         ("Essay 2", DOCUMENTS["essay_2"]),
         ("Reference 1", DOCUMENTS["reference_1"]),
         ("Reference 2", DOCUMENTS["reference_2"]),
-        ("Transcripts", DOCUMENTS["transcripts"]),
+        ("Unofficial Transcripts", DOCUMENTS["transcripts"]),
     ]
     for label, status in checklist:
         mark = "✅" if status else "❌"

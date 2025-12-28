@@ -76,7 +76,7 @@ REAL: Scenario = {
     "MBA_APPLICANT_TYPE": "international",
     "MBA_INTAKE": "september",
     "MBA_INTAKE_YEAR": 2025,
-    "MBA_GPA_LAST_TWO_YEARS": 3.25,
+    "MBA_GPA_LAST_TWO_YEARS": 3.07,
     "MBA_HAS_FOUR_YEAR_DEGREE": False,
     "MBA_WORK_YEARS": 2,
     "MBA_GMAT_SCORE": None,
