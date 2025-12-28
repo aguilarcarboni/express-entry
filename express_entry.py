@@ -16,7 +16,7 @@ from typing import Dict, List, Tuple
 # =============== 1) USER INPUTS (edit these) ===============
 AGE = 23
 
-EDUCATION = "bachelor"  # options in EDUCATION_LEVELS below
+EDUCATION = "secondary"  # options in EDUCATION_LEVELS below
 
 FOREIGN_WORK_YEARS = 2  # full-time equivalent, foreign only
 
@@ -34,7 +34,7 @@ TCF = {
     "speaking": 3,
 }
 
-ENGLISH_EXAM_DONE = True  # set to False if the English test is not yet taken
+ENGLISH_EXAM_DONE = False  # set to False if the English test is not yet taken
 FRENCH_EXAM_DONE = False  # set to False if the French test is not yet taken
 
 PROOF_OF_FUNDS_CAD = 0
@@ -625,11 +625,8 @@ def render():
         "adaptability",
     ]:
         print(f"- {label.replace('_', ' ').title()}: {fsw['breakdown'][label]}")
-    if fsw["issues"]:
-        print("FSW requirements not met:")
-        for issue in fsw["issues"]:
-            print(f"- {issue}")
     print()
+
     print(f"CRS Score: {crs.total}")
     print("Breakdown:")
     for label in ["age", "education", "english", "french", "foreign_work"]:
@@ -637,6 +634,7 @@ def render():
     print(f"- Transferability: {crs.transfer_total}")
     print(f"- Bonus: {crs.bonus_total}\n")
 
+    print("CRS Actionable Improvements:")
     actions = [
         delta_english_next_clb(english_clb, french_clb, FOREIGN_WORK_YEARS, PNP, CANADIAN_EDUCATION, JOB_OFFER),
         delta_french_next_clb(english_clb, french_clb, FOREIGN_WORK_YEARS, PNP, CANADIAN_EDUCATION, JOB_OFFER),
@@ -645,7 +643,9 @@ def render():
         delta_pnp(english_clb, french_clb, FOREIGN_WORK_YEARS, JOB_OFFER),
         delta_canadian_education(english_clb, french_clb, FOREIGN_WORK_YEARS, PNP, JOB_OFFER),
     ]
-
+    for action in actions:
+        print(f"+{action['delta']} -> {action['new_crs']} | {action['condition']}")
+    print()
     warnings: List[str] = []
     if not proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1):
         required = PROOF_OF_FUNDS[1]
@@ -660,9 +660,11 @@ def render():
 
     print("Checklist:")
     checklist = [
-        ("FSW eligible", fsw["pass"]),
-        ("Passport valid ≥6 months on application", True),
-        ("Language CLB/NCLC ≥ 7 primary", english_min >= 7),
+        ("Passport valid ≥ 6 months on application", True),
+        ("IELTS taken", ENGLISH_EXAM_DONE),
+        ("TCF taken", FRENCH_EXAM_DONE),
+        (f"FSW: {fsw['total']} > 67", fsw["pass"]),
+        (f"CRS: {crs.total} > 500", crs.total >= 500),
         ("Proof of work experience (AGM)", False),
         ("Proof of funds (Conape)", proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1)),
         ("Eletronic Credential Assessment (ECA)", False),
@@ -673,19 +675,13 @@ def render():
         print(f"{mark} {label}")
     print()
 
-    print("Extra steps:")
+    print("Steps after creating profile:")
     extra_steps = [
         "Apply to college at University of Calgary",
         "Get in contact with jobs in Calgary/Canada",
     ]
     for step in extra_steps:
         print(f"- {step}")
-    print()
-    
-    print("Actionable Improvements:")
-    for action in actions:
-        print(f"+{action['delta']} -> {action['new_crs']} | {action['condition']}")
-
 
 if __name__ == "__main__":
     render()
