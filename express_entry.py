@@ -1,11 +1,10 @@
 """
-Single-file Express Entry helper.
+Express Entry helper.
 
-Edit the user input block below, then run:
+Edit values in config.py, then run:
     python express_entry.py
 
-Pure functions, no persistence, no CLI flags.
-Python 3.11+
+Pure functions, no persistence, no CLI flags. Python 3.11+
 """
 
 from __future__ import annotations
@@ -13,53 +12,33 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
-# =============== 1) USER INPUTS (edit these) ===============
-AGE = 23
-
-EDUCATION = "secondary"  # options in EDUCATION_LEVELS below
-
-FOREIGN_WORK_YEARS = 2  # full-time equivalent, foreign only
-
-IELTS = {
-    "listening": 8.0,
-    "reading": 8.0,
-    "writing": 8.0,
-    "speaking": 8.0,
-}
-
-TCF = {
-    "listening": 150,
-    "reading": 150,
-    "writing": 3,
-    "speaking": 3,
-}
-
-ENGLISH_EXAM_DONE = False  # set to False if the English test is not yet taken
-FRENCH_EXAM_DONE = False  # set to False if the French test is not yet taken
-
-PROOF_OF_FUNDS_CAD = 0
-
-PNP = False
-CANADIAN_EDUCATION = False
-RELATIVE_IN_CANADA = True  # eligible close relative (e.g., aunt/uncle) for FSW adaptability
-JOB_OFFER = None  # Options: None, "teer00" (200 pts), "teer123" (50 pts)
-
-# =============== 2) LANGUAGE CONVERSION TABLES ===============
-# IELTS General Training -> CLB thresholds (score >= threshold)
-IELTS_CLB_TABLE: Dict[str, List[Tuple[float, int]]] = {
-    "listening": [(8.5, 10), (8.0, 9), (7.5, 8), (6.0, 7), (5.5, 6), (5.0, 5), (4.5, 4)],
-    "reading": [(8.0, 10), (7.0, 9), (6.5, 8), (6.0, 7), (5.0, 6), (4.0, 5), (3.5, 4)],
-    "writing": [(7.5, 10), (7.0, 9), (6.5, 8), (6.0, 7), (5.5, 6), (5.0, 5), (4.0, 4)],
-    "speaking": [(7.5, 10), (7.0, 9), (6.5, 8), (6.0, 7), (5.5, 6), (5.0, 5), (4.0, 4)],
-}
-
-# TCF Canada -> NCLC thresholds
-TCF_NCLC_TABLE: Dict[str, List[Tuple[float, int]]] = {
-    "listening": [(549, 10), (523, 9), (503, 8), (458, 7), (398, 6), (369, 5), (331, 4)],
-    "reading": [(549, 10), (524, 9), (499, 8), (453, 7), (406, 6), (375, 5), (342, 4)],
-    "writing": [(16, 10), (14, 9), (12, 8), (10, 7), (9, 6), (7, 5), (6, 4)],
-    "speaking": [(16, 10), (14, 9), (12, 8), (10, 7), (9, 6), (7, 5), (6, 4)],
-}
+from config import (
+    AGE,
+    CANADIAN_EDUCATION,
+    EDUCATION,
+    ENGLISH_EXAM_DONE,
+    FOREIGN_WORK_YEARS,
+    FRENCH_EXAM_DONE,
+    IELTS,
+    JOB_OFFER,
+    PASSPORT_VALID,
+    PNP,
+    PROOF_OF_FUNDS_CAD,
+    PROOF_OF_WORK,
+    ECA_DONE,
+    POLICE_CERTIFICATES_DONE,
+    RELATIVE_IN_CANADA,
+    TCF,
+)
+from conversion_tables import IELTS_CLB_TABLE, TCF_NCLC_TABLE
+from language_utils import (
+    clb_stats,
+    ielts_to_clb,
+    next_clb_target,
+    next_relevant_french_target,
+    tcf_to_nclc,
+    zero_clb,
+)
 
 # =============== 3) CONSTANTS & LOOKUPS ===============
 EDUCATION_LEVELS = {
@@ -161,8 +140,6 @@ CRS_EDU_POINTS = {
     "phd": 150,
 }
 
-FRENCH_THRESHOLDS = (5, 7, 9)
-
 # Proof of funds (single applicant family size only; values in CAD).
 # 2024 IRCC cut-offs; adjust manually if IRCC updates.
 PROOF_OF_FUNDS = {
@@ -174,31 +151,6 @@ PROOF_OF_FUNDS = {
     6: 32701,
     7: 36399,
 }
-
-# =============== 2) LANGUAGE CONVERSION HELPERS ===============
-def _convert_with_table(score: float, table: List[Tuple[float, int]]) -> int:
-    for threshold, clb in table:
-        if score >= threshold:
-            return clb
-    return 0
-
-
-def zero_clb(table: Dict[str, List[Tuple[float, int]]]) -> Dict[str, int]:
-    return {skill: 0 for skill in table}
-
-
-def ielts_to_clb(scores: Dict[str, float]) -> Dict[str, int]:
-    return {skill: _convert_with_table(scores.get(skill, 0.0), IELTS_CLB_TABLE[skill]) for skill in IELTS_CLB_TABLE}
-
-
-def tcf_to_nclc(scores: Dict[str, float]) -> Dict[str, int]:
-    return {skill: _convert_with_table(scores.get(skill, 0.0), TCF_NCLC_TABLE[skill]) for skill in TCF_NCLC_TABLE}
-
-
-def clb_stats(clb_dict: Dict[str, int]) -> Tuple[float, int]:
-    values = list(clb_dict.values())
-    return sum(values) / len(values), min(values)
-
 
 # =============== 3) FSW ELIGIBILITY ===============
 def fsw_age(age: int) -> int:
@@ -413,24 +365,6 @@ def bonus_points(primary_clb: Dict[str, int], french_clb: Dict[str, int], pnp: b
 
 
 # =============== 7) ACTIONABLE DELTAS ===============
-def next_clb_target(current: Dict[str, int], max_target: int = 10) -> Tuple[int, List[str]]:
-    min_level = min(current.values())
-    if min_level >= max_target:
-        return min_level, []
-    target = min(min_level + 1, max_target)
-    gaps = [skill for skill, level in current.items() if level < target]
-    return target, gaps
-
-
-def next_relevant_french_target(french_clb: Dict[str, int]) -> Tuple[int | None, List[str]]:
-    min_level = min(french_clb.values())
-    for threshold in FRENCH_THRESHOLDS:
-        if min_level < threshold:
-            skills = [skill for skill, level in french_clb.items() if level < threshold]
-            return threshold, skills
-    return None, []
-
-
 def next_education_level(current: str) -> str | None:
     if current not in EDUCATION_ORDER:
         raise ValueError(f"Education level {current!r} not supported.")
@@ -591,25 +525,25 @@ def render():
     print("=== EXPRESS ENTRY SUMMARY ===\n")
 
     if ENGLISH_EXAM_DONE:
-        print(f"English")
-        print(f"    Listening: {english_clb['listening']}")
-        print(f"    Reading: {english_clb['reading']}")
-        print(f"    Writing: {english_clb['writing']}")
-        print(f"    Speaking: {english_clb['speaking']}")
+        print(f"English Score: ")
+        print("Breakdown:")
+        print(f"- Listening: {english_clb['listening']}")
+        print(f"- Reading: {english_clb['reading']}")
+        print(f"- Writing: {english_clb['writing']}")
+        print(f"- Speaking: {english_clb['speaking']}")
     else:
-        print("English")
-        print("Exam not taken")
+        print("English exam not taken")
 
     print()
     if FRENCH_EXAM_DONE:
-        print(f"French")
-        print(f"    Listening: {french_clb['listening']}")
-        print(f"    Reading: {french_clb['reading']}")
-        print(f"    Writing: {french_clb['writing']}")
-        print(f"    Speaking: {french_clb['speaking']}")
+        print(f"French Score: ")
+        print("Breakdown:")
+        print(f"- Listening: {french_clb['listening']}")
+        print(f"- Reading: {french_clb['reading']}")
+        print(f"- Writing: {french_clb['writing']}")
+        print(f"- Speaking: {french_clb['speaking']}")
     else:
-        print("French")
-        print(f"Exam not taken")
+        print("French exam not taken")
 
     print()
 
@@ -660,28 +594,20 @@ def render():
 
     print("Checklist:")
     checklist = [
-        ("Passport valid ≥ 6 months on application", True),
+        ("Passport valid ≥ 6 months on application", PASSPORT_VALID),
         ("IELTS taken", ENGLISH_EXAM_DONE),
         ("TCF taken", FRENCH_EXAM_DONE),
         (f"FSW: {fsw['total']} > 67", fsw["pass"]),
         (f"CRS: {crs.total} > 500", crs.total >= 500),
-        ("Proof of work experience (AGM)", False),
+        ("Proof of work experience (AGM)", PROOF_OF_WORK),
         ("Proof of funds (Conape)", proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1)),
-        ("Eletronic Credential Assessment (ECA)", False),
-        ("Police certificates", False),
+        ("Eletronic Credential Assessment (ECA)", ECA_DONE),
+        ("Police certificates", POLICE_CERTIFICATES_DONE),
     ]
     for label, status in checklist:
-        mark = "✔" if status else "✘"
+        mark = "✅" if status else "❌"
         print(f"{mark} {label}")
     print()
-
-    print("Steps after creating profile:")
-    extra_steps = [
-        "Apply to college at University of Calgary",
-        "Get in contact with jobs in Calgary/Canada",
-    ]
-    for step in extra_steps:
-        print(f"- {step}")
 
 if __name__ == "__main__":
     render()
