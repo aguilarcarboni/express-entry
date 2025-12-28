@@ -667,14 +667,21 @@ def render():
         ("Proof of funds (Conape)", proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1)),
         ("Eletronic Credential Assessment (ECA)", False),
         ("Police certificates", False),
-        ("Apply to college at University of Calgary", False),
-        ("Get in contact with jobs in Calgary/Canada", False),
     ]
     for label, status in checklist:
         mark = "✔" if status else "✘"
         print(f"{mark} {label}")
     print()
 
+    print("Extra steps:")
+    extra_steps = [
+        "Apply to college at University of Calgary",
+        "Get in contact with jobs in Calgary/Canada",
+    ]
+    for step in extra_steps:
+        print(f"- {step}")
+    print()
+    
     print("Actionable Improvements:")
     for action in actions:
         print(f"+{action['delta']} -> {action['new_crs']} | {action['condition']}")
@@ -682,4 +689,3 @@ def render():
 
 if __name__ == "__main__":
     render()
-
