@@ -600,7 +600,7 @@ def render():
         (f"FSW: {fsw['total']} > 67", fsw["pass"]),
         (f"CRS: {crs.total} > 500", crs.total >= 500),
         ("Proof of work experience (AGM)", PROOF_OF_WORK),
-        ("Proof of funds (Conape)", proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1)),
+        ("Proof of funds", proof_of_funds_ok(PROOF_OF_FUNDS_CAD, family_size=1)),
         ("Eletronic Credential Assessment (ECA)", ECA_DONE),
         ("Police certificates", POLICE_CERTIFICATES_DONE),
     ]
