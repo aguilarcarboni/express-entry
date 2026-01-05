@@ -241,10 +241,10 @@ def render():
     print("Checklist:")
     checklist = [
         ("Four-year degree", el.checks["degree"]),
-        (f"GPA: {GPA_LAST_TWO_YEARS} ≥ 3.0", el.checks["gpa"]),
+        (f"GPA Last Two Years: {GPA_LAST_TWO_YEARS} ≥ 3.0", el.checks["gpa"]),
         ("Work experience ≥ 2 years", el.checks["work"]),
         (f"GMAT score ≥ {GMAT_RECOMMENDED}", el.checks["test"]),
-        (f"IELTS bands ≥ {IELTS_COMPONENT_MIN} in all skills", el.checks["english"]),
+        (f"IELTS bands ≥ {IELTS_COMPONENT_MIN} in all skills or exempted", el.checks["english"]),
         ("Resume", DOCUMENTS["resume"]),
         ("Essay 1", DOCUMENTS["essay_1"]),
         ("Essay 2", DOCUMENTS["essay_2"]),

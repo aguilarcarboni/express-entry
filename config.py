@@ -89,7 +89,7 @@ REAL: Scenario = {
         "essay_2": False,
         "reference_1": False,
         "reference_2": False,
-        "transcripts": False,
+        "transcripts": True,
     },
 }
 
